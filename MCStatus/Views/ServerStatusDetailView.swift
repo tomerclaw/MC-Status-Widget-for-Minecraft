@@ -194,7 +194,7 @@ struct ServerStatusDetailView: View {
                 Section {
                     ForEach(serverStatusViewModel.status?.playerSample ?? []) { player in
                         HStack(spacing: 0) {
-                            let imageUrl = URL(string: serverStatusViewModel.getMcHeadsUrl(uuid: player.uuid))
+                            let imageUrl = URL(string: serverStatusViewModel.getMcHeadsUrl(player: player))
 //                            let imageUrl = URL(string: "https://httpbin.org/delay/10")
                             LazyImage(url: imageUrl) { state in
                                 if let image = state.image {
@@ -300,7 +300,7 @@ struct ServerStatusDetailView: View {
     
     func startPrefetchingUserImages(viewModel: ServerStatusViewModel) {
         let imageURLs = (viewModel.status?.playerSample ?? []).compactMap {
-            URL(string: viewModel.getMcHeadsUrl(uuid: $0.uuid))
+            URL(string: viewModel.getMcHeadsUrl(player: $0))
         }
         
         // Initialize and start prefetching all the image URLs

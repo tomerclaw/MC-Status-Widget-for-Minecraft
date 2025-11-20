@@ -55,7 +55,7 @@ public class GameSpy4StatusParser: ServerStatusParserProtocol {
             info[key] = val
         }
         
-        var status = ServerStatus()
+        let status = ServerStatus()
         status.status = .Online
         status.source = .GameSpy4
         if let maxPlayers = info["maxplayers"] as? String, let maxPlayersInt = Int(maxPlayers) {
@@ -70,24 +70,20 @@ public class GameSpy4StatusParser: ServerStatusParserProtocol {
             status.version = version
         }
         
-        // motd (hostname)
-        // player sample
-
-        // Parse players list
-        let players: [String]
-        if playersData.isEmpty {
-            players = []
-        } else {
-            players = playersData.split(separator: 0x00).map { Data($0) }
-                .compactMap { String(data: $0, encoding: .isoLatin1) }
-                .filter { !$0.isEmpty }
+        if let motd = info["hostname"] as? String {
+            status.description = FormattedMOTD(messageSections: JavaServerStatusParser.parseJavaMOTD(input: motd))
         }
 
-//        print("=== Players (\(players.count)) ===")
-//        for (idx, p) in players.enumerated() {
-//            print("\(idx + 1): \(p)")
-//        }
-        
+
+        // Parse players list
+        if !playersData.isEmpty {
+            status.playerSample = playersData.split(separator: 0x00).map { Data($0) }
+                .compactMap { String(data: $0, encoding: .isoLatin1) }
+                .filter { !$0.isEmpty }.map { playerName in
+                    Player(name: playerName.removingMinecraftFormatCodes(), uuid: nil)
+                }
+        }
+
         return status
     }
 }

@@ -129,7 +129,18 @@ public class ServerStatusViewModel: Identifiable, Hashable {
         }
     }
     
-    public func getMcHeadsUrl(uuid: String) -> String{
-        return "https://mc-heads.net/avatar/" + uuid + "/90"
+    public func getMcHeadsUrl(player: Player) -> String{
+        var userParam = ""
+        if let uuid = player.uuid {
+            userParam = uuid
+        } else {
+            if player.name.hasPrefix(".") {
+                userParam = String(player.name.dropFirst())
+            } else {
+                userParam = player.name
+            }
+        }
+        
+        return "https://mc-heads.net/avatar/" + userParam + "/90"
     }
 }

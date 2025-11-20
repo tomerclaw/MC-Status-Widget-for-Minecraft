@@ -28,7 +28,7 @@ struct WatchServerDetailScreen: View {
             Section {
                 ForEach(playerList) { player in
                     HStack() {
-                        let imageUrl = URL(string: serverStatusViewModel.getMcHeadsUrl(uuid: player.uuid))
+                        let imageUrl = URL(string: serverStatusViewModel.getMcHeadsUrl(player: player))
                         LazyImage(url: imageUrl) { state in
                             if let image = state.image {
                                 image.resizable().scaledToFit()

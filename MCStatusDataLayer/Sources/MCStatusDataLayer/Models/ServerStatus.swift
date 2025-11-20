@@ -51,12 +51,12 @@ public class ServerStatus: Identifiable, Codable {
 
 
 public class Player: Codable, Identifiable {
-    public init(name: String, uuid: String) {
+    public init(name: String, uuid: String?) {
         self.name = name
         self.uuid = uuid
     }
     public var name = ""
-    public var uuid = ""
+    public var uuid: String?
 }
 
 public class FormattedMOTD: Codable {
