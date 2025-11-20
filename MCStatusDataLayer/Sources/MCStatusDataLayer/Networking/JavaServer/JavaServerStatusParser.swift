@@ -8,19 +8,14 @@
 import Foundation
 
 public class JavaServerStatusParser: ServerStatusParserProtocol {
-    public static func parseServerResponse(stringInput: String, config: ServerCheckerConfig?) throws -> ServerStatus {
-        
-        let jsonData = stringInput.data(using: .utf8)
-        guard let jsonData = jsonData else {
-            throw ServerStatusCheckerError.StatusUnparsable
-        }
-        
+    public static func parseServerResponse(input: Data, config: ServerCheckerConfig?) throws -> ServerStatus {
+                
         var responseObject: JavaServerStatusResponse
         do {
             //attempt to parse it into a json using a custom parser defined in the object
-            responseObject = try JSONDecoder().decode(JavaServerStatusResponse.self, from: jsonData)
+            responseObject = try JSONDecoder().decode(JavaServerStatusResponse.self, from: input)
         } catch let error {
-            print("Unable to parse response from input: " + stringInput)
+            print("Unable to parse response from input: " + (String(data: input, encoding: .utf8) ?? "<invalid data>"))
             throw error
         }
         
@@ -132,6 +127,10 @@ public class JavaServerStatusParser: ServerStatusParserProtocol {
             currentIndex = input.index(after: currentIndex)
         }
         
+        if !currentSection.text.isEmpty {
+            motdSections.append(currentSection)
+        }
+            
         return motdSections
     }
 

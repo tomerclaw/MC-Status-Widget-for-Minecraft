@@ -33,7 +33,7 @@ public class UDPClient {
         print("data sent successfully")
     }
 
-    public init?(address newAddress: String, port newPort: Int32, listener: @escaping (_ responseType: UDPResponseType, _ client: UDPClient?, _ data: Data?) -> Void) {
+    public init?(address newAddress: String, port newPort: Int32, listener: @escaping (_ responseType: UDPResponseType, _ client: UDPClient?, _ data: Data?) -> Void, readyListener: @escaping (_ client: UDPClient) -> Void) {
         
         self.listener = listener
         
@@ -51,6 +51,7 @@ public class UDPClient {
             switch (newState) {
             case .ready:
                 print("State: Ready")
+                readyListener(self)
                 return
             case .setup:
                 print("State: Setup")
@@ -73,17 +74,9 @@ public class UDPClient {
         }
     }
     
-    // SETUP WITH A 3 SECOND TIMEOUT
+
     func send(_ data: Data) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            if (!self.didRecieveData) {
-                self.listener(.ERROR, self, nil)
-            }
-        }
-        print("Sending Data")
-        self.connection.send(content: data, completion: self.resultHandler)
-
-
+    
         self.connection.receiveMessage { data, context, isComplete, error in
             self.didRecieveData = true
             guard let data = data else {
@@ -97,6 +90,13 @@ public class UDPClient {
             self.listener(.SUCCESS,self,data)
         }
         
-        
+        print("Sending Data")
+        self.connection.send(content: data, completion: self.resultHandler)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            if (!self.didRecieveData) {
+                self.listener(.ERROR, self, nil)
+            }
+        }
     }
 }

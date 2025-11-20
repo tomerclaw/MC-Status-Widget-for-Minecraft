@@ -12,7 +12,7 @@ public enum OnlineStatus: String, Codable {
 }
 
 public enum Source: Codable {
-    case Direct, CachedSRV, UpdatedSRV, ThirdParty
+    case Direct, GameSpy4, CachedSRV, UpdatedSRV, ThirdParty
 }
 
 @Observable

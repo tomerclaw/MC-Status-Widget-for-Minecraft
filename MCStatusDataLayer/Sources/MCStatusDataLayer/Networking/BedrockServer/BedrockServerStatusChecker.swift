@@ -12,12 +12,13 @@ public class BedrockServerStatusChecker: ServerStatusCheckerProtocol {
     let serverAddress: String
     let port: Int
     
-    var continuation: CheckedContinuation<String, Error>?
+    var continuation: CheckedContinuation<Data, Error>?
     var continuationHasBeenCalled = false
     let continuationQueue = DispatchQueue(label: "continuationCallerQueue")
     let queue = DispatchQueue(label: "continuationCallerQueue")
-
-    func callContinuationResume(result: String) {
+    var commandClient: UDPClient?
+    
+    func callContinuationResume(result: Data) {
         queue.sync {
             guard !continuationHasBeenCalled else {
                 return
@@ -43,7 +44,7 @@ public class BedrockServerStatusChecker: ServerStatusCheckerProtocol {
         self.port = port
     }
     
-    public func checkServer() async throws -> String {
+    public func checkServer() async throws -> Data {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             self.startConnection()
@@ -58,8 +59,7 @@ public class BedrockServerStatusChecker: ServerStatusCheckerProtocol {
     
     func startConnection() {
         // create UDP connection directly to minecraft server
-        let commandClient = UDPClient(address: self.serverAddress, port: Int32(self.port)) { responseType, udpClient, data in
-
+        self.commandClient = UDPClient(address: self.serverAddress, port: Int32(self.port)) { responseType, udpClient, data in
             if udpClient?.connection.state != .cancelled {
                 udpClient?.connection.cancel()
             }
@@ -89,18 +89,11 @@ public class BedrockServerStatusChecker: ServerStatusCheckerProtocol {
             // get rid of all the data explained earlier that we dont care about.
             let serverDataBytes = responseData.dropFirst(35)
 
-            //the remaining data is the reseponse string
-            guard let responseString = String(bytes: serverDataBytes, encoding: .utf8) else {
-                // throw error
-                self.callContinuationError(error: .StatusUnparsable)
-                return
-            }
-            
-            // return result string
-            self.callContinuationResume(result: responseString)
-            
+            // return result data
+            self.callContinuationResume(result: serverDataBytes)
+        } readyListener: { udpClient in
+            udpClient.send(self.getBedrockStatusQueryData())
         }
-        commandClient?.send(self.getBedrockStatusQueryData())
     }
     
     

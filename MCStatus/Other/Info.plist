@@ -31,5 +31,7 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app requires access to connect to servers on your local network</string>
 </dict>
 </plist>

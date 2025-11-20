@@ -20,7 +20,7 @@ public class JavaServerStatusChecker: ServerStatusCheckerProtocol {
     // we also need to use a task dispatch queue since the response are being called from many threads, so cant ensure atomic operations on the continuationHasBeenCalled variable
     var continuationHasBeenCalled = false
     let queue = DispatchQueue(label: "continuationCallerQueue")
-    var continuation: CheckedContinuation<String, Error>?
+    var continuation: CheckedContinuation<Data, Error>?
     var timeoutTask: Task<(), Error>?
     var recievedData = false
     
@@ -29,7 +29,7 @@ public class JavaServerStatusChecker: ServerStatusCheckerProtocol {
         self.port = port
     }
     
-    public func checkServer() async throws -> String {
+    public func checkServer() async throws -> Data {
         continuationHasBeenCalled = false
         recievedData = false
         return try await withCheckedThrowingContinuation { continuation in
@@ -43,7 +43,7 @@ public class JavaServerStatusChecker: ServerStatusCheckerProtocol {
         return JavaServerStatusParser.self
     }
     
-    func callContinuationResume(result: String) {
+    func callContinuationResume(result: Data) {
         queue.sync {
             guard !continuationHasBeenCalled else {
                 return
@@ -184,15 +184,10 @@ public class JavaServerStatusChecker: ServerStatusCheckerProtocol {
                     
                     //then read in the json length the api provides, which we dont care about since we are reading the rest of the response anyway
                     _ = readVariableSizedInt(bytes: &dataArr)
+                                       
                     
-                    // now the remaining data should just be a json string. First make sure this is a valid string
-                    guard let response = String(bytes: dataArr, encoding: .utf8) else {
-                        self.callContinuationError(error: ServerStatusCheckerError.StatusUnparsable)
-                        return
-                    }
-                    
-                    //if we got to this point we should have a fully formed response string from the server. Time to send it back for parsing
-                    self.callContinuationResume(result: response)
+                    //if we got to this point we should have a fully formed data response for parsing.
+                    self.callContinuationResume(result: Data(dataArr))
                     connection.cancel()
                 } else {
                     print("Received partial data. redownloading...")
