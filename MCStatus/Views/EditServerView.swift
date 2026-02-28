@@ -41,6 +41,7 @@ struct EditServerView: View {
     @State private var showingInvalidNameAlert = false
     @State private var showingInvalidPortAlert = false
     @State private var showingGameSpyUnavailableAlert = false
+    @State private var showIconLoadError = false
 
     // Tracks whether this server existed before the view opened (not a brand-new add)
     @State private var isExistingServer = false
@@ -131,10 +132,8 @@ struct EditServerView: View {
                                     // User tapped to enable — run the probe
                                     runGameSpyProbe()
                                 } else if !newValue && gameSpyCheckState == .supported {
-                                    // User manually disabled
+                                    // User manually disabled — reset check state (save deferred to saveItem)
                                     gameSpyCheckState = .unknown
-                                    server.useGameSpyQuery = false
-                                    try? modelContext.save()
                                 }
                             }
                         }
@@ -213,6 +212,9 @@ struct EditServerView: View {
         } message: {
             Text("This server doesn't have the query protocol enabled. The server owner must set enable-query=true in server.properties.")
         }
+        .alert("Couldn't Load Image", isPresented: $showIconLoadError) {
+            Button("OK") { }
+        }
     }
     //
     private func extractPort(from text: String) {
@@ -236,7 +238,9 @@ struct EditServerView: View {
     private func inputHasChanged() -> Bool {
         tempNameInput != server.name ||
         tempServerInput != server.serverUrl ||
-        (tempPortInput ?? 0) != server.serverPort
+        (tempPortInput ?? 0) != server.serverPort ||
+        tempCustomIconData != nil ||
+        pendingIconRemoval
     }
     
     // server domains cannot have / or :
@@ -250,24 +254,20 @@ struct EditServerView: View {
         tempUseGameSpy = false // reset UI until we confirm
 
         Task {
-            let url = server.serverUrl
-            let port = server.serverPort
+            let url = tempServerInput
+            let port = tempPortInput ?? server.serverPort
             do {
                 // Probe GameSpy directly — only succeeds if the server actually supports it
                 let checker = GameSpy4StatusChecker(serverAddress: url, port: port)
                 _ = try await checker.checkServer()
                 await MainActor.run {
-                    server.useGameSpyQuery = true
                     gameSpyCheckState = .supported
                     tempUseGameSpy = true
-                    try? modelContext.save()
                 }
             } catch {
                 await MainActor.run {
-                    server.useGameSpyQuery = false
                     gameSpyCheckState = .unsupported
                     tempUseGameSpy = false
-                    try? modelContext.save()
                     showingGameSpyUnavailableAlert = true
                 }
             }
@@ -311,6 +311,7 @@ struct EditServerView: View {
             server.serverType = tempServerType
             server.srvServerUrl = ""
             server.srvServerPort = 0
+            server.useGameSpyQuery = tempUseGameSpy
 
             // Commit custom icon changes
             if let newIconData = tempCustomIconData {
@@ -340,15 +341,13 @@ struct EditServerView: View {
         if !wasExistingServer && tempServerType == .Java {
             let url = server.serverUrl
             let port = server.serverPort
-            Task.detached {
+            Task { @MainActor in
                 do {
                     let checker = GameSpy4StatusChecker(serverAddress: url, port: port)
                     _ = try await checker.checkServer()
-                    await MainActor.run {
-                        server.useGameSpyQuery = true
-                        try? modelContext.save()
-                        print("[GameSpy] ✅ Auto-detected GameSpy support for new server \(url)")
-                    }
+                    server.useGameSpyQuery = true
+                    try? modelContext.save()
+                    print("[GameSpy] ✅ Auto-detected GameSpy support for new server \(url)")
                 } catch {
                     print("[GameSpy] New server \(url) does not support GameSpy — skipping")
                 }
@@ -380,6 +379,10 @@ struct EditServerView: View {
                                 await MainActor.run {
                                     tempCustomIconData = processed
                                     pendingIconRemoval = false
+                                }
+                            } else {
+                                await MainActor.run {
+                                    showIconLoadError = true
                                 }
                             }
                         }

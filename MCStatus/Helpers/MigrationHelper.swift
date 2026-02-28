@@ -31,10 +31,12 @@ class MigrationHelper {
         switch version {
         case 0:
             migrateToV1()
+        case 1:
+            break // No data migration needed for v1→v2 path
         case 2:
             break // GameSpy release — no data migration needed, triggers What's New sheet
         default:
-            return
+            break
         }
     }
     

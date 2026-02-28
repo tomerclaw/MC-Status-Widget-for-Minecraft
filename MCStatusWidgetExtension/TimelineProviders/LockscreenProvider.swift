@@ -18,6 +18,14 @@ struct LockscreenProvider: AppIntentTimelineProvider {
         self.widgetType = widgetType
     }
 
+    /// Resolves the best available icon for a server: custom icon first, then server favicon, then default.
+    func resolveIcon(server: SavedMinecraftServer, serverStatus: ServerStatus) -> UIImage {
+        if let data = server.customIconData, let img = UIImage(data: data) {
+            return img
+        }
+        return ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+    }
+
     // This is needed for apple watch complications
     func recommendations() -> [AppIntentRecommendation<ServerSelectNoThemeWidgetIntent>] {
         let container = SwiftDataHelper.getModelContainter()
@@ -51,7 +59,7 @@ struct LockscreenProvider: AppIntentTimelineProvider {
         
         let container = SwiftDataHelper.getModelContainter()
         if !context.isPreview, let (server, serverStatus) = await loadTimelineData(container: container, configuration: configuration) {
-            let serverIcon = ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+            let serverIcon = resolveIcon(server: server, serverStatus: serverStatus)
             vm = WidgetEntryViewModel(serverName: server.name, status: serverStatus, lastUpdated: "now", serverIcon: serverIcon, theme: .auto)
         }
         
@@ -103,7 +111,7 @@ struct LockscreenProvider: AppIntentTimelineProvider {
             
             return Timeline(entries: entries, policy: .after(futureDate))
         }
-        let serverIcon = ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+        let serverIcon = resolveIcon(server: server, serverStatus: serverStatus)
         
         let vm = WidgetEntryViewModel(serverName: server.name, status: serverStatus, lastUpdated: "", serverIcon: serverIcon, theme: .auto)
         let entry = ServerStatusLSSnapshotEntry(date: currentDate, configuration: configuration, viewModel: vm)

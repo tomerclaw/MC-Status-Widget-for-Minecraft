@@ -29,6 +29,8 @@ class NetworkHelper {
     // 10.0.0.0 – 10.255.255.255
     // 172.16.0.0 – 172.31.255.255
     // 192.168.0.0 – 192.168.255.255
+    // 127.0.0.0 – 127.255.255.255 (loopback)
+    // 169.254.0.0 – 169.254.255.255 (link-local)
     static func isPrivateIPv4(host: String) -> Bool {
         let parts = host.split(separator: ".")
         guard parts.count == 4 else { return false }
@@ -38,6 +40,8 @@ class NetworkHelper {
         let a = nums[0], b = nums[1]
 
         if a == 10 { return true }
+        if a == 127 { return true }                    // loopback
+        if a == 169 && b == 254 { return true }        // link-local
         if a == 192 && b == 168 { return true }
         if a == 172 && (16...31).contains(b) { return true }
 

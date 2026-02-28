@@ -14,7 +14,6 @@ public class GameSpy4StatusChecker: ServerStatusCheckerProtocol {
     
     var continuation: CheckedContinuation<Data, Error>?
     var continuationHasBeenCalled = false
-    let continuationQueue = DispatchQueue(label: "continuationCallerQueue")
     let queue = DispatchQueue(label: "continuationCallerQueue")
     var udpClient: UDPClient?
     
@@ -83,6 +82,8 @@ public class GameSpy4StatusChecker: ServerStatusCheckerProtocol {
                         
                         // Send statistic query packet with challenge
                         udpClient?.send(statPacket)
+                    } else {
+                        self.callContinuationError(error: .StatusUnparsable)
                     }
                     
                 case .query:
@@ -109,20 +110,21 @@ public class GameSpy4StatusChecker: ServerStatusCheckerProtocol {
     
     // Parse challenge response to extract challenge number
     // Response format: byte 0 = 0x09 (type), bytes 1–4 = session ID, bytes 5+ = null-terminated ASCII challenge integer
-    func parseChallenge(_ data: Data) -> UInt32? {
+    func parseChallenge(_ data: Data) -> Int32? {
         guard data.count > 5 else { return nil }
         let payload = data.dropFirst(5)
         if let str = String(data: payload, encoding: .ascii)?
             .trimmingCharacters(in: .controlCharacters)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\0")) {
-            return UInt32(str)
+            return Int32(str)
         }
         return nil
     }
     
     // Pack challenge number into 4-byte big-endian format
-    func packChallenge(_ challenge: UInt32) -> Data {
-        var value = challenge.bigEndian
+    // Reinterpret as UInt32 bit pattern to handle negative (signed) challenge values
+    func packChallenge(_ challenge: Int32) -> Data {
+        var value = UInt32(bitPattern: challenge).bigEndian
         return Data(bytes: &value, count: MemoryLayout<UInt32>.size)
     }
     

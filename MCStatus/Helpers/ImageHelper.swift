@@ -24,42 +24,36 @@ class ImageHelper {
 
     /// Processes a user-picked UIImage into Data ready to store in `customIconData`.
     /// - Center-crops to square
-    /// - If pixel width > 512: downscales to 512×512
-    /// - Always encodes as PNG
+    /// - Downscales to at most 512×512 pixels
+    /// - Always encodes as PNG at scale 1.0 (no retina inflation)
+    /// Uses UIGraphicsImageRenderer to handle CIImage-backed UIImages (e.g. HEIC from PhotosPicker)
+    /// that have a nil cgImage property, which would silently fail with a cgImage crop approach.
     #if !os(watchOS)
     static func processCustomIcon(_ image: UIImage) -> Data? {
-        let cropped = image.squareCropped()
-        let pixelWidth = cropped.size.width * cropped.scale
-        if pixelWidth > 512 {
-            return cropped.resized(to: CGSize(width: 512, height: 512)).pngData()
-        } else {
-            return cropped.pngData()
+        let pixelWidth = image.size.width * image.scale
+        let pixelHeight = image.size.height * image.scale
+        let side = min(pixelWidth, pixelHeight)
+        let targetSide = min(side, 512)
+        let targetSize = CGSize(width: targetSide, height: targetSide)
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+
+        let result = renderer.image { _ in
+            // Center-crop: compute source rect in points
+            let srcSide = min(image.size.width, image.size.height)
+            let srcX = (image.size.width - srcSide) / 2
+            let srcY = (image.size.height - srcSide) / 2
+            let scale = targetSide / (srcSide * image.scale)  // points→target scale
+            image.draw(in: CGRect(
+                x: -srcX * scale * image.scale,
+                y: -srcY * scale * image.scale,
+                width: image.size.width * scale * image.scale,
+                height: image.size.height * scale * image.scale
+            ))
         }
+        return result.pngData()
     }
     #endif
 }
-
-private extension UIImage {
-    func squareCropped() -> UIImage {
-        let side = min(size.width, size.height)
-        let origin = CGPoint(x: (size.width - side) / 2, y: (size.height - side) / 2)
-        let cropRect = CGRect(
-            x: origin.x * scale, y: origin.y * scale,
-            width: side * scale, height: side * scale
-        )
-        guard let cgCropped = cgImage?.cropping(to: cropRect) else { return self }
-        return UIImage(cgImage: cgCropped, scale: scale, orientation: imageOrientation)
-    }
-
-    #if !os(watchOS)
-    func resized(to targetSize: CGSize) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
-        return renderer.image { _ in self.draw(in: CGRect(origin: .zero, size: targetSize)) }
-    }
-    #endif
-}
-
-
-
-
-

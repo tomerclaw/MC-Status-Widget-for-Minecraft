@@ -19,13 +19,21 @@ struct HomescreenProvider: AppIntentTimelineProvider {
         return ServerStatusHSSnapshotEntry(date: Date(), configuration: ServerSelectWidgetIntent(), viewModel: vm)
     }
     
+    /// Resolves the best available icon for a server: custom icon first, then server favicon, then default.
+    func resolveIcon(server: SavedMinecraftServer, serverStatus: ServerStatus) -> UIImage {
+        if let data = server.customIconData, let img = UIImage(data: data) {
+            return img
+        }
+        return ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+    }
+    
     // is context.isPreview is true, this is the view to show when someone clicked add widget. Just show preview with placeholder data. if it is false, yo ushould actually load the current state of the view by getting the status
     func snapshot(for configuration: ServerSelectWidgetIntent, in context: Context) async -> ServerStatusHSSnapshotEntry {
         var vm = WidgetEntryViewModel()
         
         let container = SwiftDataHelper.getModelContainter()
         if !context.isPreview, let (server, serverStatus, widgetTheme) = await loadTimelineData(container: container, configuration: configuration) {
-            let serverIcon = ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+            let serverIcon = resolveIcon(server: server, serverStatus: serverStatus)
             vm = WidgetEntryViewModel(serverName: server.name, status: serverStatus, lastUpdated: "now", serverIcon: serverIcon, theme: widgetTheme)
         }
         return ServerStatusHSSnapshotEntry(date: Date(), configuration: configuration, viewModel: vm)
@@ -73,7 +81,7 @@ struct HomescreenProvider: AppIntentTimelineProvider {
             
             return Timeline(entries: entries, policy: .after(futureDate))
         }
-        let serverIcon = ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+        let serverIcon = resolveIcon(server: server, serverStatus: serverStatus)
         
         for minOffset in 0 ..< 15 {
             var timeStr = ""

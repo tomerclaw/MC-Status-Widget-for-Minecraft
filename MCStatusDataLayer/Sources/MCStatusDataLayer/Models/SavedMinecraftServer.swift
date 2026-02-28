@@ -27,9 +27,9 @@ public class SavedMinecraftServer: Identifiable, Codable {
     public var serverType = ServerType.Java
     public var useGameSpyQuery: Bool = false
     /// Custom icon set by the user. Stored as raw image Data (JPEG or PNG).
-    /// SwiftData maps this to a CKAsset in CloudKit — stored externally, not counted against record size.
+    /// @Attribute(.externalStorage) maps this to a CKAsset in CloudKit — stored externally, not counted against record size.
     /// nil = no custom icon; use server-provided favicon instead.
-    public var customIconData: Data? = nil
+    @Attribute(.externalStorage) public var customIconData: Data? = nil
     
     
     

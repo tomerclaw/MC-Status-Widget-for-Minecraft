@@ -166,11 +166,11 @@ struct MainAppContentView: View {
                 let new_v = migrationResult.1
                 if old_v == 0 && new_v >= 1 {
                     checkForBrokenWidgets()
-                } else if new_v >= 2 {
-                    // Upgrading to 2.1+ — show What's New sheet
+                }
+                if new_v >= 2 && old_v < 2 {
+                    // Upgrading to v2+ for the first time — show What's New sheet
                     showReleaseNotes = true
                 }
-                // just migration to 2.0! check if showing error alert and show new stuff sheet
             }
         }.alert(isPresented: $showAlert) {
             Alert(

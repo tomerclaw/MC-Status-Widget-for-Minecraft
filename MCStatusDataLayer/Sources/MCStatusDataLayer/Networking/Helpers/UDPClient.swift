@@ -76,6 +76,7 @@ public class UDPClient {
     
 
     func send(_ data: Data) {
+        didRecieveData = false
     
         self.connection.receiveMessage { data, context, isComplete, error in
             self.didRecieveData = true
@@ -93,7 +94,8 @@ public class UDPClient {
         print("Sending Data")
         self.connection.send(content: data, completion: self.resultHandler)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            guard let self else { return }
             if (!self.didRecieveData) {
                 self.listener(.ERROR, self, nil)
             }

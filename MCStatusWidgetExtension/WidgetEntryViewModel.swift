@@ -98,8 +98,15 @@ extension WidgetEntryViewModel {
     
     mutating func setServerIcon(base64Data: String) {
         print("Decoding base64 image")
-        
         self.icon = ImageHelper.convertFavIconString(favIcon: base64Data) ?? UIImage(named: "DefaultIcon")!
+    }
+    
+    mutating func setServerIcon(server: SavedMinecraftServer, serverStatus: ServerStatus) {
+        if let data = server.customIconData, let img = UIImage(data: data) {
+            self.icon = img
+        } else {
+            self.icon = ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
+        }
     }
     
     mutating func setForUnconfiguredView() {

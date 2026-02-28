@@ -1,5 +1,5 @@
 //
-//  JavaServerStatusParser.swift
+//  GameSpy4StatusParser.swift
 //  MCStatus
 //
 //  Created by Tomer Shemesh on 7/30/23.
@@ -14,8 +14,8 @@ public class GameSpy4StatusParser: ServerStatusParserProtocol {
         // Work on a mutable copy
         var data = input
 
-        // Require at least 16 bytes for the status header
-        guard data.count > 16 else {
+        // Require at least 17 bytes for the status header
+        guard data.count >= 17 else {
             print("Response too short for status header")
             throw ServerStatusCheckerError.StatusUnparsable
         }
@@ -23,7 +23,7 @@ public class GameSpy4StatusParser: ServerStatusParserProtocol {
 
         // Build separator: 00 00 01 'player_' 00 00
         var sep = Data([0x00, 0x00, 0x01])
-        sep.append("player_".data(using: .ascii)!)
+        sep.append(Data("player_".utf8))
         sep.append(contentsOf: [0x00, 0x00])
 
         guard let range = data.range(of: sep) else {
