@@ -26,10 +26,14 @@ public class SavedMinecraftServer: Identifiable, Codable {
     public var displayOrder = 0
     public var serverType = ServerType.Java
     public var useGameSpyQuery: Bool = false
+    /// Custom icon set by the user. Stored as raw image Data (JPEG or PNG).
+    /// SwiftData maps this to a CKAsset in CloudKit — stored externally, not counted against record size.
+    /// nil = no custom icon; use server-provided favicon instead.
+    public var customIconData: Data? = nil
     
     
     
-    public static func initialize(id:UUID, serverType: ServerType, name: String, serverUrl: String, serverPort: Int, srvServerUrl: String = "", srvServerPort: Int = 1, serverIcon: String = "", displayOrder: Int = 0, useGameSpyQuery: Bool = false) -> SavedMinecraftServer {
+    public static func initialize(id:UUID, serverType: ServerType, name: String, serverUrl: String, serverPort: Int, srvServerUrl: String = "", srvServerPort: Int = 1, serverIcon: String = "", displayOrder: Int = 0, useGameSpyQuery: Bool = false, customIconData: Data? = nil) -> SavedMinecraftServer {
         let server = SavedMinecraftServer()
         server.id = id
         server.name = name
@@ -41,6 +45,7 @@ public class SavedMinecraftServer: Identifiable, Codable {
         server.displayOrder = displayOrder
         server.serverType = serverType
         server.useGameSpyQuery = useGameSpyQuery
+        server.customIconData = customIconData
         return server
     }
     
@@ -49,7 +54,7 @@ public class SavedMinecraftServer: Identifiable, Codable {
     }
     
     public enum CodingKeys: CodingKey {
-        case id, name, serverUrl, serverPort, srvServerUrl, srvServerPort, serverIcon, displayOrder, serverType, useGameSpyQuery
+        case id, name, serverUrl, serverPort, srvServerUrl, srvServerPort, serverIcon, displayOrder, serverType, useGameSpyQuery, customIconData
       }
     
     required public init(from decoder: Decoder) throws {
@@ -64,6 +69,7 @@ public class SavedMinecraftServer: Identifiable, Codable {
         self.displayOrder = try container.decode(Int.self, forKey: .displayOrder)
         self.serverType = try container.decode(ServerType.self, forKey: .serverType)
         self.useGameSpyQuery = (try? container.decode(Bool.self, forKey: .useGameSpyQuery)) ?? false
+        self.customIconData = try? container.decode(Data.self, forKey: .customIconData)
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -78,5 +84,6 @@ public class SavedMinecraftServer: Identifiable, Codable {
         try container.encode(displayOrder, forKey: .displayOrder)
         try container.encode(serverType, forKey: .serverType)
         try container.encode(useGameSpyQuery, forKey: .useGameSpyQuery)
+        try? container.encodeIfPresent(customIconData, forKey: .customIconData)
     }
 }

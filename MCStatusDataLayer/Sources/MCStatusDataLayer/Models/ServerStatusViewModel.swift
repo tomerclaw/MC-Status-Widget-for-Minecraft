@@ -53,7 +53,9 @@ public class ServerStatusViewModel: Identifiable, Hashable {
             Task.detached { @MainActor in
                 self.loadingStatus = .Finished
                 
-                if !statusResult.favIcon.isEmpty {
+                // Only write the server favicon back to the model if the user hasn't set a custom icon.
+                // If customIconData is set, the user's choice takes priority — don't stomp it.
+                if !statusResult.favIcon.isEmpty && self.server.customIconData == nil {
                     self.server.serverIcon = statusResult.favIcon
     
                     print("Going to insert updated model")
@@ -110,6 +112,13 @@ public class ServerStatusViewModel: Identifiable, Hashable {
     }
     
     public func loadIcon() {
+        // Custom icon takes absolute priority — if the user set one, always use it.
+        if let customData = server.customIconData, let customImage = UIImage(data: customData) {
+            self.serverIcon = customImage
+            return
+        }
+
+        // Fall back to: live server favicon → cached server favicon → default
         var base64Icon = ""
         if let status, status.favIcon != "" {
             base64Icon = status.favIcon

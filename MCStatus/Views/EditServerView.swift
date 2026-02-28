@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 import MCStatusDataLayer
 import WidgetKit
+import PhotosUI
 
 enum GameSpyCheckState {
     case unknown, checking, supported, unsupported
@@ -49,6 +50,18 @@ struct EditServerView: View {
 
     // Temp toggle binding for the UI — used to intercept taps
     @State private var tempUseGameSpy = false
+
+    // Custom icon state — nil means no change pending; set when user picks a photo
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var tempCustomIconData: Data? = nil      // pending (not yet saved)
+    @State private var pendingIconRemoval = false            // user tapped "Remove" before saving
+
+    /// True if the server currently has a custom icon OR the user has picked one this session
+    private var hasCustomIcon: Bool {
+        if pendingIconRemoval { return false }
+        if tempCustomIconData != nil { return true }
+        return server.customIconData != nil
+    }
 
     var body: some View {
         Form {
@@ -97,6 +110,9 @@ struct EditServerView: View {
                     TextField(portLabelPromptText, value: $tempPortInput, formatter: NumberFormatter(), prompt: Text(portLabelPromptText)).keyboardType(.numberPad)
                 }
             }.headerProminence(.increased)
+
+            // Custom server icon section
+            customIconSection
 
             // GameSpy section — only visible for existing Java servers
             if isExistingServer && tempServerType == .Java {
@@ -295,6 +311,15 @@ struct EditServerView: View {
             server.serverType = tempServerType
             server.srvServerUrl = ""
             server.srvServerPort = 0
+
+            // Commit custom icon changes
+            if let newIconData = tempCustomIconData {
+                server.customIconData = newIconData
+            } else if pendingIconRemoval {
+                server.customIconData = nil
+            }
+            // If neither is set, leave server.customIconData as-is
+
             modelContext.insert(server)
             do {
                 // Try to save
@@ -332,6 +357,76 @@ struct EditServerView: View {
 
         // Always close immediately — no waiting on probe
         isPresented = false
+    }
+
+    // MARK: - Custom Icon Section
+
+    @ViewBuilder
+    private var customIconSection: some View {
+        Section {
+            HStack(spacing: 14) {
+                customIconPreview
+                VStack(alignment: .leading, spacing: 4) {
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Text(hasCustomIcon ? "Change Photo" : "Set Custom Icon")
+                            .font(.body)
+                    }
+                    .onChange(of: selectedPhotoItem) { _, newItem in
+                        guard let newItem else { return }
+                        Task {
+                            if let data = try? await newItem.loadTransferable(type: Data.self),
+                               let raw = UIImage(data: data),
+                               let processed = ImageHelper.processCustomIcon(raw) {
+                                await MainActor.run {
+                                    tempCustomIconData = processed
+                                    pendingIconRemoval = false
+                                }
+                            }
+                        }
+                    }
+                    if hasCustomIcon {
+                        Button(role: .destructive) {
+                            tempCustomIconData = nil
+                            pendingIconRemoval = true
+                        } label: {
+                            Text("Remove Custom Icon")
+                                .font(.body)
+                        }
+                    }
+                }
+            }
+        } header: {
+            Text("Server Icon")
+        } footer: {
+            Text("Overrides the server's favicon with a custom image.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var customIconPreview: some View {
+        if let pending = tempCustomIconData, let img = UIImage(data: pending) {
+            Image(uiImage: img)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else if !pendingIconRemoval, let saved = server.customIconData, let img = UIImage(data: saved) {
+            Image(uiImage: img)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        } else {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(.systemGray5))
+                .frame(width: 56, height: 56)
+                .overlay(
+                    Image(systemName: "photo")
+                        .foregroundStyle(.secondary)
+                )
+        }
     }
 
 }
