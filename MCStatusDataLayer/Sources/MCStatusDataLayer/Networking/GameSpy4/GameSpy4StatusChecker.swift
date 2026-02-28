@@ -108,9 +108,13 @@ public class GameSpy4StatusChecker: ServerStatusCheckerProtocol {
     }
     
     // Parse challenge response to extract challenge number
+    // Response format: byte 0 = 0x09 (type), bytes 1–4 = session ID, bytes 5+ = null-terminated ASCII challenge integer
     func parseChallenge(_ data: Data) -> UInt32? {
-        if let str = String(data: data, encoding: .ascii)?
-            .trimmingCharacters(in: .controlCharacters) {
+        guard data.count > 5 else { return nil }
+        let payload = data.dropFirst(5)
+        if let str = String(data: payload, encoding: .ascii)?
+            .trimmingCharacters(in: .controlCharacters)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\0")) {
             return UInt32(str)
         }
         return nil

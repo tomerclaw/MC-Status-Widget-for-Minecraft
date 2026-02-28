@@ -9,7 +9,12 @@ import Foundation
 
 public class DirectServerStatusChecker {
     public static func checkServer(serverUrl: String, serverPort: Int, serverType: ServerType, config: ServerCheckerConfig?) async throws -> ServerStatus {
-        let statusChecker = ServerStatusCheckerFactory().getStatusChecker(serverUrl: serverUrl, serverPort: serverPort, serverType: serverType)
+        let statusChecker: ServerStatusCheckerProtocol
+        if config?.useGameSpyQuery == true && serverType == .Java {
+            statusChecker = GameSpy4StatusChecker(serverAddress: serverUrl, port: serverPort)
+        } else {
+            statusChecker = ServerStatusCheckerFactory().getStatusChecker(serverUrl: serverUrl, serverPort: serverPort, serverType: serverType)
+        }
         let resultData = try await statusChecker.checkServer()
         let result = try statusChecker.getParser().parseServerResponse(input: resultData, config: config)
         print("Successful connection and parsing. returning result.")

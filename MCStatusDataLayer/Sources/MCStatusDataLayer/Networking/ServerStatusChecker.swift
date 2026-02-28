@@ -17,6 +17,8 @@ public class ServerStatusChecker {
 //        }
         
         let forceRefeshSrv = config?.forceSRVRefresh ?? false
+        var effectiveConfig = config ?? ServerCheckerConfig()
+        effectiveConfig.useGameSpyQuery = server.useGameSpyQuery
         // first check if we need to refresh the srv
         if (forceRefeshSrv) {
             if let srvRecord = await SRVResolver.lookupMinecraftSRVRecord(serverURL: server.serverUrl), (srvRecord.0 != server.srvServerUrl || srvRecord.1 != server.srvServerPort) {
@@ -36,7 +38,7 @@ public class ServerStatusChecker {
         if  server.serverType == .Java && !server.srvServerUrl.isEmpty && server.srvServerPort != 0 {
             do {
                 print("CHECKING SERVER FROM CACHED SRV: " + server.srvServerUrl)
-                let res = try await DirectServerStatusChecker.checkServer(serverUrl: server.srvServerUrl, serverPort: server.srvServerPort, serverType: server.serverType, config: config)
+                let res = try await DirectServerStatusChecker.checkServer(serverUrl: server.srvServerUrl, serverPort: server.srvServerPort, serverType: server.serverType, config: effectiveConfig)
                 res.source = .CachedSRV
                 return res
             } catch {
@@ -51,7 +53,7 @@ public class ServerStatusChecker {
         if server.serverType == .Bedrock || server.serverUrl != server.srvServerUrl || server.serverPort != server.srvServerPort {
             do {
                 print("CONNECTING TO SERVER DIRECTLY (IGNORING SRV)")
-                let res = try await DirectServerStatusChecker.checkServer(serverUrl: server.serverUrl, serverPort: server.serverPort, serverType: server.serverType, config: config)
+                let res = try await DirectServerStatusChecker.checkServer(serverUrl: server.serverUrl, serverPort: server.serverPort, serverType: server.serverType, config: effectiveConfig)
                 res.source = .Direct
                 return res
             } catch {
@@ -77,7 +79,7 @@ public class ServerStatusChecker {
                 print("FOUND NEW SRV RECORD FROM DNS! CHECKING SERVER AT: " + server.srvServerUrl)
 
                 do {
-                    let res = try await DirectServerStatusChecker.checkServer(serverUrl: server.srvServerUrl, serverPort: server.srvServerPort, serverType: server.serverType, config: config)
+                    let res = try await DirectServerStatusChecker.checkServer(serverUrl: server.srvServerUrl, serverPort: server.srvServerPort, serverType: server.serverType, config: effectiveConfig)
                     res.source = .UpdatedSRV
                     return res
                 } catch {
@@ -92,7 +94,7 @@ public class ServerStatusChecker {
         // if we hear back from the 3rd party server, and they also say the server is offline, we can agree its offline
         do {
             print("CALLING BACKUP SERVER")
-            let res = try await WebServerStatusChecker.checkServer(serverUrl: server.serverUrl, serverPort: server.serverPort, serverType: server.serverType, config: config)
+            let res = try await WebServerStatusChecker.checkServer(serverUrl: server.serverUrl, serverPort: server.serverPort, serverType: server.serverType, config: effectiveConfig)
             res.source = .ThirdParty
             print("Got result from third part. Returning...")
             return res
@@ -109,10 +111,12 @@ public class ServerStatusChecker {
 public struct ServerCheckerConfig {
     public var sortUsers: Bool = false
     public var forceSRVRefresh: Bool = false
+    public var useGameSpyQuery: Bool = false
     
-    public init(sortUsers: Bool = false, forceSRVRefresh: Bool = false) {
+    public init(sortUsers: Bool = false, forceSRVRefresh: Bool = false, useGameSpyQuery: Bool = false) {
         self.forceSRVRefresh = forceSRVRefresh
         self.sortUsers = sortUsers
+        self.useGameSpyQuery = useGameSpyQuery
     }
 }
 

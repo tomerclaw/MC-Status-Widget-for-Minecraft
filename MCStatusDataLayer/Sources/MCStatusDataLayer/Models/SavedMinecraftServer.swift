@@ -25,10 +25,11 @@ public class SavedMinecraftServer: Identifiable, Codable {
     public var serverIcon = ""
     public var displayOrder = 0
     public var serverType = ServerType.Java
+    public var useGameSpyQuery: Bool = false
     
     
     
-    public static func initialize(id:UUID, serverType: ServerType, name: String, serverUrl: String, serverPort: Int, srvServerUrl: String = "", srvServerPort: Int = 1, serverIcon: String = "", displayOrder: Int = 0) -> SavedMinecraftServer {
+    public static func initialize(id:UUID, serverType: ServerType, name: String, serverUrl: String, serverPort: Int, srvServerUrl: String = "", srvServerPort: Int = 1, serverIcon: String = "", displayOrder: Int = 0, useGameSpyQuery: Bool = false) -> SavedMinecraftServer {
         let server = SavedMinecraftServer()
         server.id = id
         server.name = name
@@ -39,6 +40,7 @@ public class SavedMinecraftServer: Identifiable, Codable {
         server.serverIcon = serverIcon
         server.displayOrder = displayOrder
         server.serverType = serverType
+        server.useGameSpyQuery = useGameSpyQuery
         return server
     }
     
@@ -47,7 +49,7 @@ public class SavedMinecraftServer: Identifiable, Codable {
     }
     
     public enum CodingKeys: CodingKey {
-        case id, name, serverUrl, serverPort, srvServerUrl, srvServerPort, serverIcon, displayOrder, serverType
+        case id, name, serverUrl, serverPort, srvServerUrl, srvServerPort, serverIcon, displayOrder, serverType, useGameSpyQuery
       }
     
     required public init(from decoder: Decoder) throws {
@@ -61,6 +63,7 @@ public class SavedMinecraftServer: Identifiable, Codable {
         self.serverIcon = try container.decode(String.self, forKey: .serverIcon)
         self.displayOrder = try container.decode(Int.self, forKey: .displayOrder)
         self.serverType = try container.decode(ServerType.self, forKey: .serverType)
+        self.useGameSpyQuery = (try? container.decode(Bool.self, forKey: .useGameSpyQuery)) ?? false
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -74,5 +77,6 @@ public class SavedMinecraftServer: Identifiable, Codable {
         try container.encode(serverIcon, forKey: .serverIcon)
         try container.encode(displayOrder, forKey: .displayOrder)
         try container.encode(serverType, forKey: .serverType)
+        try container.encode(useGameSpyQuery, forKey: .useGameSpyQuery)
     }
 }
