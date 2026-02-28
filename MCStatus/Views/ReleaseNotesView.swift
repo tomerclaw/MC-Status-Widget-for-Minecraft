@@ -37,6 +37,7 @@ struct ReleaseNotesView: View {
             summary: "GameSpy Query support for Java servers — see who's really online.",
             features: [
                 Feature(title: "GameSpy Query Support", description: "Java servers with enable-query=true in the server.properties now shows the full player list on the server detail page — no more 12-player cap. Enable it per-server in server settings.", icon: "person.3.fill", iconColor: .green),
+                Feature(title: "Custom Server Icons", description: "Set a custom icon for any server — pick any photo from your library. Your icon is cropped to a square, stored in iCloud, and syncs across all your devices. Tap the server icon in Add/Edit server to get started.", icon: "photo.fill", iconColor: .purple),
                 Feature(title: "More Coming Soon!", description: "Stay tuned for more exciting features in upcoming releases!", icon: "sparkles", iconColor: .yellow)
             ]
         ),
