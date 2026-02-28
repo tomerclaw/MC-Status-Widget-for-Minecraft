@@ -74,11 +74,13 @@ struct BaseWidgetView: View {
                             .resizable()
                             .widgetAccentedRenderingMode(WidgetAccentedRenderingMode.accentedDesaturated)
                             .scaledToFit().frame(width: 36.0, height: 36.0, alignment: .leading)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                             .widgetAccentable()
                     } else {
                         Image(uiImage: entry.viewModel.icon)
                             .resizable()
                             .scaledToFit().frame(width: 36.0, height: 36.0, alignment: .leading)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     
                     if let statusIcon = entry.viewModel.statusIcon, !statusIcon.isEmpty {

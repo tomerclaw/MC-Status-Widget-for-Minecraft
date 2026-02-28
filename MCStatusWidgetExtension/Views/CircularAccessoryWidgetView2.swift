@@ -45,10 +45,12 @@ struct CircularAccessoryWidgetView2 : View {
                         Image(uiImage: entry.viewModel.icon).resizable()
                             .widgetAccentedRenderingMode(WidgetAccentedRenderingMode.accentedDesaturated)
                             .scaledToFit().frame(width: 25.0, height: 25.0).padding(0).offset(x: 0, y: -1)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
                             .widgetAccentable()
                     } else {
                         Image(uiImage: entry.viewModel.icon).resizable()
                             .scaledToFit().frame(width: 25.0, height: 25.0).padding(0)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
                             .widgetAccentable().offset(x: 0, y: -1)
                     }
                 }

@@ -22,7 +22,7 @@ struct HomescreenProvider: AppIntentTimelineProvider {
     /// Resolves the best available icon for a server: custom icon first, then server favicon, then default.
     func resolveIcon(server: SavedMinecraftServer, serverStatus: ServerStatus) -> UIImage {
         if let data = server.customIconData, let img = UIImage(data: data) {
-            return img
+            return ImageHelper.resized(img, to: CGSize(width: 128, height: 128))
         }
         return ImageHelper.convertFavIconString(favIcon: serverStatus.favIcon) ?? UIImage(named: "DefaultIcon")!
     }

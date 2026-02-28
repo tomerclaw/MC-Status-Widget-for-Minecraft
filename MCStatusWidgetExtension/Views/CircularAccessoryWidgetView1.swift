@@ -64,6 +64,7 @@ struct CircularAccessoryWidgetView1 : View {
                                     .widgetAccentedRenderingMode(WidgetAccentedRenderingMode.accentedDesaturated)
                                     .scaledToFit().frame(width: iconSize, height: iconSize).padding(0)
                                     .padding(.top, iconTopPadding)
+                                    .clipShape(RoundedRectangle(cornerRadius: 3))
                                     .widgetAccentable()
                                     
                             } else {
@@ -71,6 +72,7 @@ struct CircularAccessoryWidgetView1 : View {
                                     .resizable()
                                     .scaledToFit().frame(width: iconSize, height: iconSize).padding(0)
                                     .padding(.top, iconTopPadding)
+                                    .clipShape(RoundedRectangle(cornerRadius: 3))
                                     .widgetAccentable()
                                     
                             }

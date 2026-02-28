@@ -44,12 +44,14 @@ struct CornerAccessoryWidgetView1 : View {
                         .resizable()
                         .widgetAccentedRenderingMode(WidgetAccentedRenderingMode.accentedDesaturated)
                         .scaledToFit().frame(width: iconSize, height: iconSize).padding(0)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                         .widgetAccentable()
                     
                 } else {
                     Image(uiImage: entry.viewModel.icon)
                         .resizable()
                         .scaledToFit().frame(width: iconSize, height: iconSize).padding(0)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                         .widgetAccentable()
                     
                 }
