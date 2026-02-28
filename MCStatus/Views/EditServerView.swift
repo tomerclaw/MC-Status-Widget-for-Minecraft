@@ -236,14 +236,10 @@ struct EditServerView: View {
         Task {
             let url = server.serverUrl
             let port = server.serverPort
-            let config = ServerCheckerConfig(useGameSpyQuery: true)
             do {
-                _ = try await DirectServerStatusChecker.checkServer(
-                    serverUrl: url,
-                    serverPort: port,
-                    serverType: .Java,
-                    config: config
-                )
+                // Probe GameSpy directly — only succeeds if the server actually supports it
+                let checker = GameSpy4StatusChecker(serverAddress: url, port: port)
+                _ = try await checker.checkServer()
                 await MainActor.run {
                     server.useGameSpyQuery = true
                     gameSpyCheckState = .supported
@@ -322,14 +318,10 @@ struct EditServerView: View {
             Task {
                 let url = server.serverUrl
                 let port = server.serverPort
-                let config = ServerCheckerConfig(useGameSpyQuery: true)
                 do {
-                    _ = try await DirectServerStatusChecker.checkServer(
-                        serverUrl: url,
-                        serverPort: port,
-                        serverType: .Java,
-                        config: config
-                    )
+                    // Probe GameSpy directly — only succeeds if server actually supports it
+                    let checker = GameSpy4StatusChecker(serverAddress: url, port: port)
+                    _ = try await checker.checkServer()
                     await MainActor.run {
                         server.useGameSpyQuery = true
                         gameSpyCheckState = .supported
