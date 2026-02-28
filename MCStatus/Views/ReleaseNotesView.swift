@@ -36,7 +36,7 @@ struct ReleaseNotesView: View {
             version: "2.1",
             summary: "GameSpy Query support for Java servers — see who's really online.",
             features: [
-                Feature(title: "GameSpy Query Support", description: "Java servers with the query protocol enabled now show the full player list on the server detail page — no more 12-player cap. Enable it per-server in server settings.", icon: "person.3.fill", iconColor: .green),
+                Feature(title: "GameSpy Query Support", description: "Java servers with enable-query=true in the server.properties now shows the full player list on the server detail page — no more 12-player cap. Enable it per-server in server settings.", icon: "person.3.fill", iconColor: .green),
                 Feature(title: "More Coming Soon!", description: "Stay tuned for more exciting features in upcoming releases!", icon: "sparkles", iconColor: .yellow)
             ]
         ),
