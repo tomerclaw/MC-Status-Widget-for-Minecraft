@@ -310,19 +310,16 @@ struct EditServerView: View {
             WidgetCenter.shared.reloadAllTimelines()
         }
 
-        // After save: auto-probe GameSpy only for existing Java servers where toggle is OFF
-        // If user deliberately turned it off (tempUseGameSpy == false && was previously supported),
-        // or it's already on — don't re-probe, just respect the current state.
-        if wasExistingServer && tempServerType == .Java && !tempUseGameSpy && gameSpyCheckState != .supported {
-            // Toggle is off and hasn't been confirmed — run initial probe
+        // After save: probe GameSpy only for NEW Java servers (first-time add)
+        // Editing an existing server never auto-probes — user controls the toggle themselves
+        if !wasExistingServer && tempServerType == .Java {
             gameSpyCheckState = .checking
-            isExistingServer = true // keep section visible during probe
+            isExistingServer = true // make section visible so spinner shows
 
             Task {
                 let url = server.serverUrl
                 let port = server.serverPort
                 do {
-                    // Probe GameSpy directly — only succeeds if server actually supports it
                     let checker = GameSpy4StatusChecker(serverAddress: url, port: port)
                     _ = try await checker.checkServer()
                     await MainActor.run {
@@ -343,11 +340,7 @@ struct EditServerView: View {
                 }
             }
         } else {
-            // User turned it off, it's already on, or it's Bedrock/new — honor state and close
-            if wasExistingServer && tempServerType == .Java {
-                server.useGameSpyQuery = tempUseGameSpy
-                try? modelContext.save()
-            }
+            // Existing server edit — just close, toggle state already saved above
             isPresented = false
         }
     }
