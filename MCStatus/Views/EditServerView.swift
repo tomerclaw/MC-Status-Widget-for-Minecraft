@@ -387,15 +387,14 @@ struct EditServerView: View {
                             }
                         }
                     }
-                    if hasCustomIcon {
-                        Button(role: .destructive) {
-                            tempCustomIconData = nil
-                            pendingIconRemoval = true
-                        } label: {
-                            Text("Remove Custom Icon")
-                                .font(.body)
-                        }
-                    }
+                }
+            }
+            if hasCustomIcon {
+                Button(role: .destructive) {
+                    tempCustomIconData = nil
+                    pendingIconRemoval = true
+                } label: {
+                    Text("Remove Custom Icon")
                 }
             }
         } header: {
