@@ -16,23 +16,25 @@ public class DirectServerStatusChecker {
 
         // 2. If GameSpy query is enabled and this is a Java server, also run GameSpy to get the full player list
         if (config?.useGameSpyQuery ?? false) && serverType == .Java {
+            print("[GameSpy] Enabled for \(serverUrl):\(serverPort) — running full stat query")
             do {
                 let gameSpyChecker = GameSpy4StatusChecker(serverAddress: serverUrl, port: serverPort)
                 let gameSpyData = try await gameSpyChecker.checkServer()
                 let gameSpyResult = try gameSpyChecker.getParser().parseServerResponse(input: gameSpyData, config: config)
                 // Merge: replace player sample with the full list from GameSpy
+                let previousCount = result.playerSample.count
                 result.playerSample = gameSpyResult.playerSample
-                // Update online player count if GameSpy reports a more accurate value
                 if gameSpyResult.onlinePlayerCount > 0 {
                     result.onlinePlayerCount = gameSpyResult.onlinePlayerCount
                 }
+                print("[GameSpy] ✅ Success — player list updated: \(previousCount) → \(result.playerSample.count) players (\(result.playerSample.map { $0.name }.joined(separator: ", ")))")
             } catch {
                 // GameSpy query failed — silently fall back to the normal result, no crash
-                print("GameSpy query failed, using normal result. Error: \(error)")
+                print("[GameSpy] ❌ Query failed for \(serverUrl):\(serverPort) — using normal result. Error: \(error)")
             }
         }
 
-        print("Successful connection and parsing. returning result.")
+        print("[MCStatus] ✅ Status check complete for \(serverUrl) — \(result.onlinePlayerCount)/\(result.maxPlayerCount) online")
         return result
     }
 }

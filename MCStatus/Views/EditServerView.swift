@@ -310,8 +310,11 @@ struct EditServerView: View {
             WidgetCenter.shared.reloadAllTimelines()
         }
 
-        // After save: if editing an existing Java server, probe GameSpy in background
-        if wasExistingServer && tempServerType == .Java {
+        // After save: auto-probe GameSpy only for existing Java servers where toggle is OFF
+        // If user deliberately turned it off (tempUseGameSpy == false && was previously supported),
+        // or it's already on — don't re-probe, just respect the current state.
+        if wasExistingServer && tempServerType == .Java && !tempUseGameSpy && gameSpyCheckState != .supported {
+            // Toggle is off and hasn't been confirmed — run initial probe
             gameSpyCheckState = .checking
             isExistingServer = true // keep section visible during probe
 
@@ -335,13 +338,16 @@ struct EditServerView: View {
                         gameSpyCheckState = .unsupported
                         tempUseGameSpy = false
                         try? modelContext.save()
-                        showingGameSpyUnavailableAlert = true
                         isPresented = false
                     }
                 }
             }
         } else {
-            // New server or Bedrock — close immediately
+            // User turned it off, it's already on, or it's Bedrock/new — honor state and close
+            if wasExistingServer && tempServerType == .Java {
+                server.useGameSpyQuery = tempUseGameSpy
+                try? modelContext.save()
+            }
             isPresented = false
         }
     }
