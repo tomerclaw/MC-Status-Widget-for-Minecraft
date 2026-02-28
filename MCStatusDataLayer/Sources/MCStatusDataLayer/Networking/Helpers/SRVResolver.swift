@@ -108,7 +108,7 @@ public class SRVResolver {
     public static func lookupMinecraftSRVRecord(serverURL: String) async -> (String,Int)? {
         
         //if its a regular ip just return nil
-        guard !SRVResolver.isValidIpAddress(ipToValidate: serverURL) else {
+        guard !NetworkHelper.isIpAddress(ipToValidate: serverURL) else {
             print("SRVResolver - ignoring ip address request")
             return nil
         }

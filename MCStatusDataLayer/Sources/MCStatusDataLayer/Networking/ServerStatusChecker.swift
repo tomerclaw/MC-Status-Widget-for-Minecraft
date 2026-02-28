@@ -90,6 +90,15 @@ public class ServerStatusChecker {
         }
         
         
+        // if the server is a local ip address, dont bother calling the 3rd party server, just return down
+        if NetworkHelper.isPrivateIPv4(host: server.serverUrl) {
+            print("SERVER IS LOCAL IP ADDRESS, SKIPPING 3RD PARTY CHECK")
+            let status = ServerStatus()
+            status.source = .Direct
+            status.status = .Offline
+            return status
+        }
+
         // STEP 4 if all else fails, ask 3rd party web server for info.
         // if we hear back from the 3rd party server, and they also say the server is offline, we can agree its offline
         do {
