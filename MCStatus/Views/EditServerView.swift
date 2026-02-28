@@ -10,6 +10,10 @@ import SwiftData
 import MCStatusDataLayer
 import WidgetKit
 
+enum GameSpyCheckState {
+    case unknown, checking, supported, unsupported
+}
+
 struct EditServerView: View {
     
     private enum FocusedField {
@@ -35,7 +39,17 @@ struct EditServerView: View {
     @State private var showingInvalidURLAlert = false
     @State private var showingInvalidNameAlert = false
     @State private var showingInvalidPortAlert = false
-    
+    @State private var showingGameSpyUnavailableAlert = false
+
+    // Tracks whether this server existed before the view opened (not a brand-new add)
+    @State private var isExistingServer = false
+
+    // Tracks the result of the GameSpy probe
+    @State var gameSpyCheckState: GameSpyCheckState = .unknown
+
+    // Temp toggle binding for the UI — used to intercept taps
+    @State private var tempUseGameSpy = false
+
     var body: some View {
         Form {
             Section(header: Text("Start monitoring a server"), footer: Text("*MCStatus is used for checking the status an existing server. It will not create, setup, or host a new server.").padding(EdgeInsets(top: 10,leading: 0,bottom: 0,trailing: 0))) {
@@ -83,6 +97,43 @@ struct EditServerView: View {
                     TextField(portLabelPromptText, value: $tempPortInput, formatter: NumberFormatter(), prompt: Text(portLabelPromptText)).keyboardType(.numberPad)
                 }
             }.headerProminence(.increased)
+
+            // GameSpy section — only visible for existing Java servers
+            if isExistingServer && tempServerType == .Java {
+                Section {
+                    HStack {
+                        if gameSpyCheckState == .checking {
+                            Text("GameSpy Query")
+                            Spacer()
+                            ProgressView()
+                        } else {
+                            Toggle(isOn: $tempUseGameSpy) {
+                                Text("GameSpy Query")
+                            }
+                            .onChange(of: tempUseGameSpy, initial: false) { oldValue, newValue in
+                                if newValue && gameSpyCheckState != .supported {
+                                    // User tapped to enable — run the probe
+                                    runGameSpyProbe()
+                                } else if !newValue && gameSpyCheckState == .supported {
+                                    // User manually disabled
+                                    gameSpyCheckState = .unknown
+                                    server.useGameSpyQuery = false
+                                    try? modelContext.save()
+                                }
+                            }
+                        }
+                    }
+
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "star.fill")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text("Requires enable-query=true in server.properties. When enabled, shows the full player list beyond the 12-player preview.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         }
             .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -102,6 +153,9 @@ struct EditServerView: View {
             
         }
             .onAppear {
+            // Detect if this is an existing server (has a real URL) or a brand-new add
+            isExistingServer = !server.serverUrl.isEmpty
+
             tempServerInput = server.serverUrl
             if (server.serverPort != 0) {
                 tempPortInput = server.serverPort
@@ -109,6 +163,15 @@ struct EditServerView: View {
             tempNameInput = server.name
             tempServerType = server.serverType
             focusedField = .serverName
+
+            // Restore GameSpy state based on persisted value
+            if server.useGameSpyQuery {
+                gameSpyCheckState = .supported
+                tempUseGameSpy = true
+            } else {
+                gameSpyCheckState = .unknown
+                tempUseGameSpy = false
+            }
         }.interactiveDismissDisabled(inputHasChanged())
         
         .alert("Invalid Server URL/IP Address", isPresented: $showingInvalidURLAlert) {
@@ -128,6 +191,11 @@ struct EditServerView: View {
             }
         } message: {
             Text("Port must be a number between 0 and 65535")
+        }
+        .alert("GameSpy Unavailable", isPresented: $showingGameSpyUnavailableAlert) {
+            Button("OK") { }
+        } message: {
+            Text("This server doesn't have the query protocol enabled. The server owner must set enable-query=true in server.properties.")
         }
     }
     //
@@ -159,7 +227,40 @@ struct EditServerView: View {
     private func isUrlValid(url: String) -> Bool {
         return !url.contains(":") && !url.contains("/")
     }
-    
+
+    // Runs the GameSpy probe against the current server config
+    private func runGameSpyProbe() {
+        gameSpyCheckState = .checking
+        tempUseGameSpy = false // reset UI until we confirm
+
+        Task {
+            let url = server.serverUrl
+            let port = server.serverPort
+            let config = ServerCheckerConfig(useGameSpyQuery: true)
+            do {
+                _ = try await DirectServerStatusChecker.checkServer(
+                    serverUrl: url,
+                    serverPort: port,
+                    serverType: .Java,
+                    config: config
+                )
+                await MainActor.run {
+                    server.useGameSpyQuery = true
+                    gameSpyCheckState = .supported
+                    tempUseGameSpy = true
+                    try? modelContext.save()
+                }
+            } catch {
+                await MainActor.run {
+                    server.useGameSpyQuery = false
+                    gameSpyCheckState = .unsupported
+                    tempUseGameSpy = false
+                    try? modelContext.save()
+                    showingGameSpyUnavailableAlert = true
+                }
+            }
+        }
+    }
     
     // THIS IS CALLED WHEN A SERVER IS EDITED OR ADDED
     private func saveItem() {
@@ -181,6 +282,8 @@ struct EditServerView: View {
             return
         }
         
+        // Capture whether this is an existing server BEFORE we update the model
+        let wasExistingServer = isExistingServer
         
         withAnimation {
             server.serverUrl = tempServerInput
@@ -209,6 +312,44 @@ struct EditServerView: View {
             parentViewRefreshCallBack()
             // force the widgets to refresh
             WidgetCenter.shared.reloadAllTimelines()
+        }
+
+        // After save: if editing an existing Java server, probe GameSpy in background
+        if wasExistingServer && tempServerType == .Java {
+            gameSpyCheckState = .checking
+            isExistingServer = true // keep section visible during probe
+
+            Task {
+                let url = server.serverUrl
+                let port = server.serverPort
+                let config = ServerCheckerConfig(useGameSpyQuery: true)
+                do {
+                    _ = try await DirectServerStatusChecker.checkServer(
+                        serverUrl: url,
+                        serverPort: port,
+                        serverType: .Java,
+                        config: config
+                    )
+                    await MainActor.run {
+                        server.useGameSpyQuery = true
+                        gameSpyCheckState = .supported
+                        tempUseGameSpy = true
+                        try? modelContext.save()
+                        isPresented = false
+                    }
+                } catch {
+                    await MainActor.run {
+                        server.useGameSpyQuery = false
+                        gameSpyCheckState = .unsupported
+                        tempUseGameSpy = false
+                        try? modelContext.save()
+                        showingGameSpyUnavailableAlert = true
+                        isPresented = false
+                    }
+                }
+            }
+        } else {
+            // New server or Bedrock — close immediately
             isPresented = false
         }
     }
