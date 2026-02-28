@@ -310,39 +310,28 @@ struct EditServerView: View {
             WidgetCenter.shared.reloadAllTimelines()
         }
 
-        // After save: probe GameSpy only for NEW Java servers (first-time add)
-        // Editing an existing server never auto-probes — user controls the toggle themselves
+        // After save: for NEW Java servers, silently probe GameSpy in background
+        // Close immediately — no spinner, no UI flash. Result is saved quietly.
         if !wasExistingServer && tempServerType == .Java {
-            gameSpyCheckState = .checking
-            isExistingServer = true // make section visible so spinner shows
-
-            Task {
-                let url = server.serverUrl
-                let port = server.serverPort
+            let url = server.serverUrl
+            let port = server.serverPort
+            Task.detached {
                 do {
                     let checker = GameSpy4StatusChecker(serverAddress: url, port: port)
                     _ = try await checker.checkServer()
                     await MainActor.run {
                         server.useGameSpyQuery = true
-                        gameSpyCheckState = .supported
-                        tempUseGameSpy = true
                         try? modelContext.save()
-                        isPresented = false
+                        print("[GameSpy] ✅ Auto-detected GameSpy support for new server \(url)")
                     }
                 } catch {
-                    await MainActor.run {
-                        server.useGameSpyQuery = false
-                        gameSpyCheckState = .unsupported
-                        tempUseGameSpy = false
-                        try? modelContext.save()
-                        isPresented = false
-                    }
+                    print("[GameSpy] New server \(url) does not support GameSpy — skipping")
                 }
             }
-        } else {
-            // Existing server edit — just close, toggle state already saved above
-            isPresented = false
         }
+
+        // Always close immediately — no waiting on probe
+        isPresented = false
     }
 
 }
