@@ -20,20 +20,6 @@
                ReferencedContainer = "container:MCStatus.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F13E5FF82A4BD614005BE9B2"
-               BuildableName = "MC Status.app"
-               BlueprintName = "MC Status"
-               ReferencedContainer = "container:MCStatus.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

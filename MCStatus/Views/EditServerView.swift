@@ -177,8 +177,10 @@ struct EditServerView: View {
             }
             tempNameInput = server.name
             tempServerType = server.serverType
-            focusedField = .serverName
-
+                
+            if (!isExistingServer) {
+                focusedField = .serverName
+            }
             // Restore GameSpy state based on persisted value
             if server.useGameSpyQuery {
                 gameSpyCheckState = .supported
