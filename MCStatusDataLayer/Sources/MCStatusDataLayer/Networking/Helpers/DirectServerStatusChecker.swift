@@ -21,13 +21,12 @@ public class DirectServerStatusChecker {
                 let gameSpyChecker = GameSpy4StatusChecker(serverAddress: serverUrl, port: serverPort)
                 let gameSpyData = try await gameSpyChecker.checkServer()
                 let gameSpyResult = try gameSpyChecker.getParser().parseServerResponse(input: gameSpyData, config: config)
-                // Merge: replace player sample with the full list from GameSpy
-                let previousCount = result.playerSample.count
-                result.playerSample = gameSpyResult.playerSample
-                if gameSpyResult.onlinePlayerCount > 0 {
-                    result.onlinePlayerCount = gameSpyResult.onlinePlayerCount
+                // Merge: replace player sample with the full list from GameSpy if that list is larger
+                if (result.playerSample.count < gameSpyResult.playerSample.count) {
+                    result.playerSample = gameSpyResult.playerSample
                 }
-                print("[GameSpy] ✅ Success — player list updated: \(previousCount) → \(result.playerSample.count) players (\(result.playerSample.map { $0.name }.joined(separator: ", ")))")
+                
+                print("[GameSpy] ✅ Success — player list updated: \(result.playerSample.count) → \(result.playerSample.count) players (\(result.playerSample.map { $0.name }.joined(separator: ", ")))")
             } catch {
                 // GameSpy query failed — silently fall back to the normal result, no crash
                 print("[GameSpy] ❌ Query failed for \(serverUrl):\(serverPort) — using normal result. Error: \(error)")

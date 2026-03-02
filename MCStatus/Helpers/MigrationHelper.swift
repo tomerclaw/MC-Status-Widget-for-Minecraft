@@ -11,7 +11,7 @@ import MCStatusDataLayer
 
 class MigrationHelper {
     
-    static let VERSION = 3
+    static let VERSION = 2
     
     // returns nil if no migration, otherwie the current version that we just migratred to
     @MainActor static func migrationIfNeeded() -> (Int,Int)? {
@@ -35,9 +35,7 @@ class MigrationHelper {
         case 1:
             break // No data migration needed for v1→v2 path
         case 2:
-            break // GameSpy release — no data migration needed, triggers What's New sheet
-        case 3:
-            break // GameSpy auto-detection — handled separately as async operation (see runGameSpyAutoDetectionMigration)
+            break // GameSpy release — handled separately as async operation (see runGameSpyAutoDetectionMigration)
         default:
             break
         }

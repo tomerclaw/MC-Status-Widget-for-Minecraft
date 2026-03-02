@@ -143,7 +143,7 @@ struct EditServerView: View {
                         Image(systemName: "star.fill")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                        Text("Requires enable-query=true in server.properties. When enabled, shows the full player list beyond the 12-player preview.")
+                        Text("Requires the server owner to set enable-query=true in server.properties. When enabled, shows the full player list beyond the 12-player preview.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
