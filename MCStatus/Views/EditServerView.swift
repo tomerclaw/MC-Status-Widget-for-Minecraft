@@ -56,6 +56,7 @@ struct EditServerView: View {
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var tempCustomIconData: Data? = nil      // pending (not yet saved)
     @State private var pendingIconRemoval = false            // user tapped "Remove" before saving
+    @State private var showFilePicker = false
 
     /// True if the server currently has a custom icon OR the user has picked one this session
     private var hasCustomIcon: Bool {
@@ -368,6 +369,34 @@ struct EditServerView: View {
             HStack(spacing: 14) {
                 customIconPreview
                 VStack(alignment: .leading, spacing: 4) {
+#if targetEnvironment(macCatalyst)
+                    Button(hasCustomIcon ? "Change Photo" : "Set Custom Icon") {
+                        showFilePicker = true
+                    }
+                    .font(.body)
+                    .fileImporter(
+                        isPresented: $showFilePicker,
+                        allowedContentTypes: [.image]
+                    ) { result in
+                        switch result {
+                        case .success(let url):
+                            let accessed = url.startAccessingSecurityScopedResource()
+                            defer {
+                                if accessed { url.stopAccessingSecurityScopedResource() }
+                            }
+                            if let data = try? Data(contentsOf: url),
+                               let raw = UIImage(data: data),
+                               let processed = ImageHelper.processCustomIcon(raw) {
+                                tempCustomIconData = processed
+                                pendingIconRemoval = false
+                            } else {
+                                showIconLoadError = true
+                            }
+                        case .failure:
+                            showIconLoadError = true
+                        }
+                    }
+#else
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                         Text(hasCustomIcon ? "Change Photo" : "Set Custom Icon")
                             .font(.body)
@@ -389,6 +418,7 @@ struct EditServerView: View {
                             }
                         }
                     }
+#endif
                 }
             }
             if hasCustomIcon {
