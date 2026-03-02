@@ -171,6 +171,12 @@ struct MainAppContentView: View {
                     // Upgrading to v2+ for the first time — show What's New sheet
                     showReleaseNotes = true
                 }
+                if new_v >= 3 && old_v < 3 {
+                    // Upgrading to v3: auto-detect GameSpy support for existing Java servers
+                    MigrationHelper.runGameSpyAutoDetectionMigration(container: modelContext.container)
+                    // Show What's New sheet for v3 release
+                    showReleaseNotes = true
+                }
             }
         }.alert(isPresented: $showAlert) {
             Alert(
