@@ -17,8 +17,7 @@ enum PageDestinations {
     case SettingsRoot
 }
 struct MainAppContentView: View {
-    
-    let watchHelper = WatchHelper()
+    @EnvironmentObject var watchHelper: WatchHelper
     
     @Environment(\.requestReview) private var requestReview
     @Environment(\.scenePhase) var scenePhase

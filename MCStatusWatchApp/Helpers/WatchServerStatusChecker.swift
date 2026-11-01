@@ -8,8 +8,9 @@
 import Foundation
 import MCStatusDataLayer
 import WatchConnectivity
+import SwiftUI
 
-class WatchServerStatusChecker {
+class WatchServerStatusChecker: ObservableObject {
     
     var responseListener: ((UUID, ServerStatus) -> Void)?
     let connectivityProvider = ConnectivityProvider()
@@ -60,8 +61,8 @@ class WatchServerStatusChecker {
             do {
                 
                 var connectiveStateCounter = 0
-                // first wait up to 1 second for the phone to become available.
-                while (!WCSession.default.isReachable || self.connectivityProvider.connectionState != .activated) && connectiveStateCounter < 4{
+                // first wait up to 5 seconds for the phone to become available.
+                while (!WCSession.default.isReachable || self.connectivityProvider.connectionState != .activated) && connectiveStateCounter < 20{
                     connectiveStateCounter += 1
                     try await Task.sleep(nanoseconds: UInt64(0.25 * Double(NSEC_PER_SEC)))
                 }

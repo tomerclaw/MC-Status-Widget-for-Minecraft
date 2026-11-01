@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 import MCStatusDataLayer
 
-class WatchHelper: NSObject, WCSessionDelegate {
+class WatchHelper: NSObject, WCSessionDelegate, ObservableObject {
     override init() {
         super.init()
         connect()

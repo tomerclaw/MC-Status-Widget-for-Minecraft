@@ -33,7 +33,7 @@ struct WatchContentView: View {
         let timeInterval = currentTime.timeIntervalSince(lastRefreshTime)
         return Int(timeInterval / 60)
     }
-    var statusChecker = WatchServerStatusChecker()
+    @StateObject private var statusChecker = WatchServerStatusChecker()
     
     var body: some View {
         NavigationStack {
